@@ -17,6 +17,7 @@ using namespace std;
 //
 
 extern unsigned int nMinerSleep;
+extern int nSuperBlockMinimum;
 
 int static FormatHashBlocks(void* pbuffer, unsigned int len)
 {
@@ -165,6 +166,8 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
         ParseMoney(mapArgs["-mintxfee"], nMinTxFee);
 
 	pblock->nSuperBlock = pindexPrev->nSuperBlock;
+	if (pblock->nSuperBlock < nSuperBlockMinimum)
+		pblock->nSuperBlock = nSuperBlockMinimum;
 
 	// Check if the previous block was a bonus block and create a reward tx if necessary
 	// The reward tx will be a copy of the bonus block coinbase tx with the outputs adjusted proportionally
@@ -185,6 +188,12 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
 		// Add bonus block reward tx
 		pblock->vtx.push_back(txReward);
 		pblock->nSuperBlock = pindexPrev->nHeight + 1;
+		if (pblock->nSuperBlock < nSuperBlockMinimum) {
+			pblock->nSuperBlock = nSuperBlockMinimum;
+		}
+		else {
+			nSuperBlockMinimum = pblock->nSuperBlock;
+		}
 	}
 
     pblock->nBits = GetNextTargetRequired(pindexPrev, fProofOfStake);

@@ -83,6 +83,7 @@ const string strMessageMagic = "SweepstakeCoin Signed Message:\n";
 int64_t nTransactionFee = MIN_TX_FEE;
 int64_t nReserveBalance = 0;
 int64_t nMinimumInputValue = 0;
+int nSuperBlockMinimum = 0;
 
 static const int NUM_OF_POW_CHECKPOINT = 0;
 static const int checkpointPoWHeight[NUM_OF_POW_CHECKPOINT][2] =
@@ -1068,7 +1069,7 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees, const CBlockIndex* pind
 	}
 
 	int nPoWHeight = GetPowHeight(pindex);
-	printf(">> nHeight = %d, nPoWHeight = %d\n", nHeight, nPoWHeight);
+	// printf(">> nHeight = %d, nPoWHeight = %d\n", nHeight, nPoWHeight);
 	int mm = nPoWHeight / 43200;
 	if (mm < 135) {
 		for (int i = 0; i < mm; i++) {
@@ -1130,8 +1131,16 @@ int64_t GetProofOfWorkBonusRewardFactor(CBlockIndex* pindex)
 	if (pindex->nHeight < 3)	// block 3 or less not allowed for superblock.
 		return 0;
 
+	if (pindex->nHeight > ENFORCE_BLOCK) {
+		if (nSuperBlockMinimum < 20898)
+			nSuperBlockMinimum = 20898;
+	}
+
 	uint256 hash = pindex->GetBlockHash();
 	int lastSuperBlock = pindex->nSuperBlock;
+	if (lastSuperBlock < nSuperBlockMinimum)
+		lastSuperBlock = nSuperBlockMinimum;
+
 	int delta = CountPowDelta(pindex, lastSuperBlock);
 
 	std::string cseed_str = hash.ToString().substr(12, 7);
@@ -1156,15 +1165,16 @@ int64_t GetProofOfWorkBonusRewardFactor(CBlockIndex* pindex)
 			upperLimit = MAX_RANDOM_RANGE;
 	}
 
-
+	/*
 	printf(">> height = %d, random = %d, numberofday= %f, upper = %d, lower = %d\n", pindex->nHeight, random, numofdays,
-		upperLimit, lowerLimit);
+	 	upperLimit, lowerLimit);
 	printf(">> cseed =%s, nSuperblock = %d\n", cseed, lastSuperBlock);
+	*/
 
 	if (random > lowerLimit && random < upperLimit)	// 1 in 5 days on average
 	{
-		printf(">>> Found Sweepstake!! height = %d, random = %d, numberofday= %f, upper = %d, lower = %d\n", pindex->nHeight, random, numofdays,
-			upperLimit, lowerLimit);
+		// printf(">>> Found Sweepstake!! height = %d, random = %d, numberofday= %f, upper = %d, lower = %d\n", pindex->nHeight, random, numofdays,
+		//	upperLimit, lowerLimit);
 
 		if (numofdays > SWEEPSTAKE_MAX_ACCUMULATE_DAY)
 			numofdays = SWEEPSTAKE_MAX_ACCUMULATE_DAY;
@@ -1187,6 +1197,9 @@ int64_t GetCurrentSweepstakeSize(const CBlockIndex* pindex)
 
 	int height = pindex->nHeight;
 	int lastSuperBlock = pindex->nSuperBlock;
+	if (lastSuperBlock < nSuperBlockMinimum)
+		lastSuperBlock = nSuperBlockMinimum;
+
 	int delta = CountPowDelta(pprev, lastSuperBlock);
 	double numofdays = (double)delta / (double)POW_BLOCKS_PER_DAY;
 	if (numofdays > SWEEPSTAKE_MAX_ACCUMULATE_DAY)
@@ -2063,12 +2076,13 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
     uint256 nBestBlockTrust = pindexBest->nHeight != 0 ? (pindexBest->nChainTrust - pindexBest->pprev->nChainTrust) : pindexBest->nChainTrust;
 
+	/*
     printf("SetBestChain: new best=%s  height=%d  trust=%s  blocktrust=%"PRId64"  date=%s\n",
       hashBestChain.ToString().c_str(), nBestHeight,
       CBigNum(nBestChainTrust).ToString().c_str(),
       nBestBlockTrust.Get64(),
       DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
-
+	*/
     // Check the version of the last 100 blocks to see if we need to upgrade:
     if (!fIsInitialDownload)
     {
