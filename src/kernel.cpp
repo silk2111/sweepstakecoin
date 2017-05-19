@@ -22,8 +22,14 @@ static std::map<int, unsigned int> mapStakeModifierCheckpoints =
 	(10000, 0xf7c57eefu)
 	(15000, 0x821ca3e0u)
 	(20000, 0x8ca93513u)
-	(27733, 0x967bcd23u)
 	(30000, 0x7e4bbad4u)
+	(31169, 0xbc432c7u)
+	(31692, 0xa347170du)
+	(32180, 0x7c2f0dc3u)
+	(32470, 0xb2f3cda6u)
+	(33106, 0x7a1cbb3fu)
+	(34000, 0xaab59f76u)
+	(34252, 0xa142499u)
 	;
 
 // Hard checkpoints of stake modifiers to ensure they are deterministic (testNet)
@@ -389,7 +395,7 @@ unsigned int GetStakeModifierChecksum(const CBlockIndex* pindex)
 // Check stake modifier hard checkpoints
 bool CheckStakeModifierCheckpoints(int nHeight, unsigned int nStakeModifierChecksum)
 {
-	// printf(">> Height = %d, nStakeModifierChecksum = %x\n", nHeight, nStakeModifierChecksum);
+	printf(">> Height = %d, nStakeModifierChecksum = %x\n", nHeight, nStakeModifierChecksum);
     MapModifierCheckpoints& checkpoints = (fTestNet ? mapStakeModifierCheckpointsTestNet : mapStakeModifierCheckpoints);
 
     if (checkpoints.count(nHeight))

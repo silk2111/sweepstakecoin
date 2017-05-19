@@ -1069,7 +1069,7 @@ int64_t GetProofOfWorkReward(int nHeight, int64_t nFees, const CBlockIndex* pind
 	}
 
 	int nPoWHeight = GetPowHeight(pindex);
-	// printf(">> nHeight = %d, nPoWHeight = %d\n", nHeight, nPoWHeight);
+	printf(">> nHeight = %d, nPoWHeight = %d\n", nHeight, nPoWHeight);
 	int mm = nPoWHeight / 43200;
 	if (mm < 135) {
 		for (int i = 0; i < mm; i++) {
@@ -1125,6 +1125,10 @@ int64_t GetProofOfWorkBonusRewardFactor(CBlockIndex* pindex)
 	int lowerLimit = 367500;
 	int upperLimit = 367601;
 
+	if (pindex->nHeight > SWITCH_OFF_SS_BLOCK)
+		return 0;
+
+
 	if (!pindex->IsProofOfWork())
 		return 0;
 
@@ -1165,16 +1169,14 @@ int64_t GetProofOfWorkBonusRewardFactor(CBlockIndex* pindex)
 			upperLimit = MAX_RANDOM_RANGE;
 	}
 
-	/*
-	printf(">> height = %d, random = %d, numberofday= %f, upper = %d, lower = %d\n", pindex->nHeight, random, numofdays,
-	 	upperLimit, lowerLimit);
-	printf(">> cseed =%s, nSuperblock = %d\n", cseed, lastSuperBlock);
-	*/
+	// printf(">> height = %d, random = %d, numberofday= %f, upper = %d, lower = %d\n", pindex->nHeight, random, numofdays,
+	//  	upperLimit, lowerLimit);
+	// printf(">> cseed =%s, nSuperblock = %d\n", cseed, lastSuperBlock);
 
 	if (random > lowerLimit && random < upperLimit)	// 1 in 5 days on average
 	{
-		// printf(">>> Found Sweepstake!! height = %d, random = %d, numberofday= %f, upper = %d, lower = %d\n", pindex->nHeight, random, numofdays,
-		//	upperLimit, lowerLimit);
+		printf(">>> Found Sweepstake!! height = %d, random = %d, numberofday= %f, upper = %d, lower = %d\n", pindex->nHeight, random, numofdays,
+			upperLimit, lowerLimit);
 
 		if (numofdays > SWEEPSTAKE_MAX_ACCUMULATE_DAY)
 			numofdays = SWEEPSTAKE_MAX_ACCUMULATE_DAY;
@@ -1191,6 +1193,9 @@ int64_t GetCurrentSweepstakeSize(const CBlockIndex* pindex)
 {
 	CBlockIndex* pprev = pindex->pprev;
 	if (!pprev)
+		return 0;
+
+	if (pindex->nHeight > SWITCH_OFF_SS_BLOCK)
 		return 0;
 
 	int64_t reward = GetProofOfWorkReward(pindex->nHeight, 0, pprev);
@@ -2076,13 +2081,12 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
     uint256 nBestBlockTrust = pindexBest->nHeight != 0 ? (pindexBest->nChainTrust - pindexBest->pprev->nChainTrust) : pindexBest->nChainTrust;
 
-	/*
     printf("SetBestChain: new best=%s  height=%d  trust=%s  blocktrust=%"PRId64"  date=%s\n",
       hashBestChain.ToString().c_str(), nBestHeight,
       CBigNum(nBestChainTrust).ToString().c_str(),
       nBestBlockTrust.Get64(),
       DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
-	*/
+
     // Check the version of the last 100 blocks to see if we need to upgrade:
     if (!fIsInitialDownload)
     {
@@ -3356,15 +3360,15 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             return error("message getdata size() = %"PRIszu"", vInv.size());
         }
 
-        if (fDebugNet || (vInv.size() != 1))
-            printf("received getdata (%"PRIszu" invsz)\n", vInv.size());
+        // if (fDebugNet || (vInv.size() != 1))
+        //    printf("received getdata (%"PRIszu" invsz)\n", vInv.size());
 
         BOOST_FOREACH(const CInv& inv, vInv)
         {
             if (fShutdown)
                 return true;
-            if (fDebugNet || (vInv.size() == 1))
-                printf("received getdata for: %s\n", inv.ToString().c_str());
+            // if (fDebugNet || (vInv.size() == 1))
+            //    printf("received getdata for: %s\n", inv.ToString().c_str());
 
             if (inv.type == MSG_BLOCK)
             {
@@ -3432,12 +3436,12 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (pindex)
             pindex = pindex->pnext;
         int nLimit = 500;
-        printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
+        // printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
         for (; pindex; pindex = pindex->pnext)
         {
             if (pindex->GetBlockHash() == hashStop)
             {
-                printf("  getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
+                // printf("  getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
                 // SweepstakeCoin: tell downloading node about the latest block if it's
                 // without risk being rejected due to stake connection check
                 if (hashStop != hashBestChain && pindex->GetBlockTime() + nStakeMinAge > pindexBest->GetBlockTime())
@@ -3449,7 +3453,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             {
                 // When this block is requested, we'll send an inv that'll make them
                 // getblocks the next batch of inventory.
-                printf("  getblocks stopping at limit %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
+                // printf("  getblocks stopping at limit %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
                 pfrom->hashContinue = pindex->GetBlockHash();
                 break;
             }
