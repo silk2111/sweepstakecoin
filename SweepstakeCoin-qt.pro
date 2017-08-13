@@ -33,7 +33,7 @@ win32 {
     LIBS += -L"E:/libcommuni-3.2.0/lib"
 
     INCLUDEPATH += "E:/MinGW/msys/1.0/local/include"
-
+}
 
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
@@ -219,7 +219,7 @@ SOURCES +=     src/tor/address.c \
     src/tor/transports.c \
     src/tor/util_codedigest.c \
     
-NO_LEVELDB=1
+NO_LEVELDB=0
 !contains(NO_LEVELDB, 1) {
     !win32 {
         # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
